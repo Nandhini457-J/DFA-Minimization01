@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>DFA Minimization</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+
+            min-height: 100vh;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #141e30,
+                    #243b55
+                );
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            box-shadow:
+                0 10px 30px rgba(0,0,0,.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #243b55;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+        }
+
+        label {
+            display: block;
+
+            margin-top: 15px;
+
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin-top: 6px;
+
+            border:
+                1px solid #ccc;
+
+            border-radius: 7px;
+
+            font-size: 15px;
+        }
+
+        textarea {
+            height: 180px;
+
+            resize: vertical;
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 14px;
+
+            margin-top: 20px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #243b55;
+
+            color: white;
+
+            font-size: 17px;
+
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #141e30;
+        }
+
+        #message {
+            margin-top: 20px;
+
+            font-weight: bold;
+        }
+
+        #result {
+
+            display: none;
+
+            margin-top: 25px;
+
+            padding: 20px;
+
+            background: #f5f6f8;
+
+            border-radius: 10px;
+        }
+
+        .group {
+
+            display: inline-block;
+
+            padding: 10px 15px;
+
+            margin: 5px;
+
+            background: #243b55;
+
+            color: white;
+
+            border-radius: 7px;
+        }
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+
+            border: 1px solid #ccc;
+
+            padding: 10px;
+
+            text-align: center;
+        }
+
+        th {
+
+            background: #243b55;
+
+            color: white;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+    <h1>
+        DFA Minimization
+    </h1>
+
+    <p class="subtitle">
+        Python Flask Full Stack Project
+    </p>
+
+
+    <label>
+        States
+    </label>
+
+    <input
+        id="states"
+        placeholder="A,B,C,D,E"
+    >
+
+
+    <label>
+        Alphabet
+    </label>
+
+    <input
+        id="alphabet"
+        placeholder="0,1"
+    >
+
+
+    <label>
+        Start State
+    </label>
+
+    <input
+        id="start"
+        placeholder="A"
+    >
+
+
+    <label>
+        Final States
+    </label>
+
+    <input
+        id="finalStates"
+        placeholder="D,E"
+    >
+
+
+    <label>
+        Transitions
+    </label>
+
+    <textarea
+        id="transitions"
+        placeholder="A,0,B
+A,1,C
+B,0,A
+B,1,D
+C,0,A
+C,1,E
+D,0,D
+D,1,E
+E,0,E
+E,1,E"></textarea>
+
+
+    <button onclick="minimizeDFA()">
+        Minimize DFA
+    </button>
+
+
+    <div id="message"></div>
+
+    <div id="result"></div>
+
+</div>
+
+
+<script>
+
+async function minimizeDFA() {
+
+    const states =
+        document.getElementById("states")
+        .value
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+
+    const alphabet =
+        document.getElementById("alphabet")
+        .value
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+
+    const start =
+        document.getElementById("start")
+        .value
+        .trim();
+
+
+    const finalStates =
+        document.getElementById("finalStates")
+        .value
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+
+    const transitionText =
+        document.getElementById("transitions")
+        .value
+        .trim();
+
+
+    const message =
+        document.getElementById("message");
+
+
+    const result =
+        document.getElementById("result");
+
+
+    if (
+        states.length === 0 ||
+        alphabet.length === 0 ||
+        !start ||
+        finalStates.length === 0 ||
+        !transitionText
+    ) {
+
+        message.innerHTML =
+            "<p class='error'>Please fill all fields.</p>";
+
+        return;
+    }
+
+
+    const transitions =
+        transitionText
+        .split("\n")
+        .map(line => {
+
+            const parts =
+                line
+                .split(",")
+                .map(x => x.trim());
+
+
+            return {
+
+                from: parts[0],
+
+                symbol: parts[1],
+
+                to: parts[2]
+
+            };
+
+        });
+
+
+    message.innerHTML =
+        "<p>Minimizing DFA...</p>";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/minimize",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        states:
+                            states,
+
+                        alphabet:
+                            alphabet,
+
+                        start:
+                            start,
+
+                        final_states:
+                            finalStates,
+
+                        transitions:
+                            transitions
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!data.success) {
+
+            message.innerHTML =
+                `<p class="error">
+                    ${data.error}
+                </p>`;
+
+            return;
+        }
+
+
+        const dfa =
+            data.result;
+
+
+        message.innerHTML =
+            `<p class="success">
+                DFA minimized successfully!
+            </p>`;
+
+
+        let html = `
+
+            <h2>
+                Minimized DFA
+            </h2>
+
+            <p>
+                Original States:
+                <b>
+                    ${dfa.original_states.length}
+                </b>
+            </p>
+
+            <p>
+                Reachable States:
+                <b>
+                    ${dfa.reachable_states.length}
+                </b>
+            </p>
+
+            <p>
+                Minimized States:
+                <b>
+                    ${dfa.minimized_states.length}
+                </b>
+            </p>
+
+            <h3>
+                Equivalent State Groups
+            </h3>
+        `;
+
+
+        dfa.equivalent_groups
+        .forEach(group => {
+
+            html += `
+
+                <span class="group">
+
+                    ${group.name}
+                    =
+                    {
+                    ${group.states.join(", ")}
+                    }
+
+                </span>
+
+            `;
+
+        });
+
+
+        html += `
+
+            <h3>
+                Minimized Transition Table
+            </h3>
+
+            <table>
+
+                <tr>
+
+                    <th>
+                        State
+                    </th>
+        `;
+
+
+        alphabet.forEach(symbol => {
+
+            html += `
+                <th>
+                    ${symbol}
+                </th>
+            `;
+
+        });
+
+
+        html += "</tr>";
+
+
+        dfa.minimized_states
+        .forEach(state => {
+
+            html += `
+                <tr>
+
+                    <td>
+                        <b>${state}</b>
+                    </td>
+            `;
+
+
+            alphabet.forEach(symbol => {
+
+                const transition =
+                    dfa.transitions.find(
+                        t =>
+                        t.from === state &&
+                        t.symbol === symbol
+                    );
+
+
+                html += `
+                    <td>
+                        ${
+                            transition
+                            ? transition.to
+                            : "-"
+                        }
+                    </td>
+                `;
+
+            });
+
+
+            html += "</tr>";
+
+        });
+
+
+        html += `
+
+            </table>
+
+            <h3>
+                Start State
+            </h3>
+
+            <p>
+                <b>
+                    ${dfa.start_state}
+                </b>
+            </p>
+
+
+            <h3>
+                Final States
+            </h3>
+
+            <p>
+                <b>
+                    ${dfa.final_states.join(", ")}
+                </b>
+            </p>
+
+        `;
+
+
+        if (
+            dfa.removed_states.length > 0
+        ) {
+
+            html += `
+
+                <h3>
+                    Removed Unreachable States
+                </h3>
+
+                <p>
+                    ${dfa.removed_states.join(", ")}
+                </p>
+
+            `;
+
+        }
+
+
+        result.innerHTML = html;
+
+        result.style.display =
+            "block";
+
+
+    } catch (error) {
+
+        message.innerHTML = `
+
+            <p class="error">
+
+                Cannot connect to Flask server.
+
+                Make sure app.py is running.
+
+            </p>
+
+        `;
+    }
+
+}
+
+</script>
+
+
+</body>
+
+</html>
